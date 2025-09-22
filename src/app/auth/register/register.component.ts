@@ -9,7 +9,8 @@ import { CommonModule, NgIf } from '@angular/common'; // <-- Ajout
   selector: 'app-register',
   standalone: true,
   imports: [ReactiveFormsModule, RouterModule, CommonModule, NgIf],
-  templateUrl: './register.component.html'
+  templateUrl: './register.component.html',
+  styleUrls: ['./register.component.scss']  // <-- Assure-toi que ce fichier existe
 })
 export class RegisterComponent {
   registerForm: FormGroup;

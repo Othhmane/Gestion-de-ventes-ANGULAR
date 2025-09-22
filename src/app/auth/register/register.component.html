@@ -1,19 +1,29 @@
-<h2>Register</h2>
-<form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
-  <div>
-    <label>Username</label>
-    <input formControlName="username">
+<div class="register-container">
+  <div class="register-card">
+    <h2>Créer un compte</h2>
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label>Nom d’utilisateur</label>
+        <input type="text" formControlName="username" placeholder="Entrez votre username">
+      </div>
+
+      <div class="form-group">
+        <label>Mot de passe</label>
+        <input type="password" formControlName="password" placeholder="Entrez votre mot de passe">
+      </div>
+
+      <div class="form-group">
+        <label>Confirmer le mot de passe</label>
+        <input type="password" formControlName="confirmPassword" placeholder="Confirmez le mot de passe">
+      </div>
+
+      <button type="submit">S’inscrire</button>
+    </form>
+
+    <p class="error" *ngIf="error">{{ error }}</p>
+    <p class="success" *ngIf="success">{{ success }}</p>
+
+    <a routerLink="/auth/login" class="login-link">Déjà un compte ? Connectez-vous</a>
   </div>
-  <div>
-    <label>Password</label>
-    <input type="password" formControlName="password">
-  </div>
-  <div>
-    <label>Confirm Password</label>
-    <input type="password" formControlName="confirmPassword">
-  </div>
-  <button type="submit">Register</button>
-</form>
-<p *ngIf="error" style="color:red">{{ error }}</p>
-<p *ngIf="success" style="color:green">{{ success }}</p>
-<a routerLink="/auth/login">Déjà un compte ? Connectez-vous</a>
+</div>
