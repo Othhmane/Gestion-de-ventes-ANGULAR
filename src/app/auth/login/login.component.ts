@@ -25,7 +25,7 @@ export class LoginComponent {
   onSubmit() {
     const { username, password } = this.loginForm.value;
     if (this.auth.login(username, password)) {
-      this.router.navigate(['/produits']);
+      this.router.navigate(['/clients']);
     } else {
       this.error = 'Nom d’utilisateur ou mot de passe incorrect';
     }
