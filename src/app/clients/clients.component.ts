@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 
 interface Client {
   id: number;
@@ -16,10 +17,22 @@ interface Client {
   siret: string;
 }
 
+interface Transaction {
+  id: number;
+  clientId: number;
+  date: string;
+  type: 'entree' | 'sortie';
+  montant: number;
+  description: string;
+  categorie?: string;
+  reference?: string;
+  soldeApres: number;
+}
+
 @Component({
   selector: 'app-clients',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule],
   templateUrl: './clients.component.html',
   styleUrls: ['./clients.component.scss']
 })
@@ -66,12 +79,47 @@ export class ClientsComponent {
     }
   ];
 
+  // Données de démonstration pour les transactions
+  transactions: Transaction[] = [
+    {
+      id: 1,
+      clientId: 1,
+      date: '2024-01-15',
+      type: 'entree',
+      montant: 5000,
+      description: 'Paiement facture #FAC-001',
+      categorie: 'facture',
+      reference: 'FAC-001',
+      soldeApres: 5000
+    },
+    {
+      id: 2,
+      clientId: 1,
+      date: '2024-01-20',
+      type: 'sortie',
+      montant: 1500,
+      description: 'Remboursement avance',
+      categorie: 'remboursement',
+      reference: 'REM-001',
+      soldeApres: 3500
+    }
+  ];
+
   selectedClient: Client | null = null;
+  selectedClientForSpreadsheet: Client | null = null;
   clientForm: FormGroup;
+  transactionForm: FormGroup;
   showAddForm: boolean = false;
+  showSpreadsheet: boolean = false;
+  showTransactionForm: boolean = false;
+  
+  // Filtres pour les transactions
+  filterType: string = '';
+  searchTerm: string = '';
 
   constructor(private fb: FormBuilder) {
     this.clientForm = this.createClientForm();
+    this.transactionForm = this.createTransactionForm();
   }
 
   private createClientForm(): FormGroup {
@@ -89,6 +137,18 @@ export class ClientsComponent {
     });
   }
 
+  private createTransactionForm(): FormGroup {
+    const today = new Date().toISOString().split('T')[0];
+    return this.fb.group({
+      date: [today, Validators.required],
+      type: ['', Validators.required],
+      montant: [0, [Validators.required, Validators.min(0.01)]],
+      description: ['', [Validators.required, Validators.minLength(3)]],
+      categorie: [''],
+      reference: ['']
+    });
+  }
+
   addClient(): void {
     if (this.clientForm.valid) {
       const newClient: Client = {
@@ -100,10 +160,8 @@ export class ClientsComponent {
       this.clientForm.reset();
       this.showAddForm = false;
       
-      // Message de succès (optionnel - vous pouvez ajouter un service de notification)
       console.log('Client ajouté avec succès:', newClient);
     } else {
-      // Marquer tous les champs comme touchés pour afficher les erreurs
       this.markFormGroupTouched();
     }
   }
@@ -130,17 +188,177 @@ export class ClientsComponent {
     this.showAddForm = false;
   }
 
-  // Méthode utilitaire pour formater le numéro SIRET
+  // ===== GESTION DES FEUILLES DE CALCUL =====
+
+  openSpreadsheet(client: Client): void {
+    this.selectedClientForSpreadsheet = client;
+    this.showSpreadsheet = true;
+    this.showTransactionForm = false;
+    this.resetTransactionForm();
+  }
+
+  closeSpreadsheet(): void {
+    this.showSpreadsheet = false;
+    this.selectedClientForSpreadsheet = null;
+    this.showTransactionForm = false;
+  }
+
+  // ===== GESTION DES TRANSACTIONS =====
+
+  addTransaction(): void {
+    if (this.transactionForm.valid && this.selectedClientForSpreadsheet) {
+      const formValue = this.transactionForm.value;
+      const currentBalance = this.getClientBalance();
+      
+      const newTransaction: Transaction = {
+        id: Date.now(),
+        clientId: this.selectedClientForSpreadsheet.id,
+        date: formValue.date,
+        type: formValue.type,
+        montant: parseFloat(formValue.montant),
+        description: formValue.description,
+        categorie: formValue.categorie || undefined,
+        reference: formValue.reference || undefined,
+        soldeApres: formValue.type === 'entree' 
+          ? currentBalance + parseFloat(formValue.montant)
+          : currentBalance - parseFloat(formValue.montant)
+      };
+
+      this.transactions.push(newTransaction);
+      this.recalculateBalances();
+      this.resetTransactionForm();
+      this.showTransactionForm = false;
+
+      console.log('Transaction ajoutée:', newTransaction);
+    }
+  }
+
+  resetTransactionForm(): void {
+    const today = new Date().toISOString().split('T')[0];
+    this.transactionForm.reset({
+      date: today,
+      type: '',
+      montant: 0,
+      description: '',
+      categorie: '',
+      reference: ''
+    });
+  }
+
+  editTransaction(transaction: Transaction): void {
+    // Logique pour éditer une transaction
+    this.transactionForm.patchValue({
+      date: transaction.date,
+      type: transaction.type,
+      montant: transaction.montant,
+      description: transaction.description,
+      categorie: transaction.categorie || '',
+      reference: transaction.reference || ''
+    });
+    this.showTransactionForm = true;
+  }
+
+  deleteTransaction(transactionId: number): void {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette transaction ?')) {
+      const index = this.transactions.findIndex(t => t.id === transactionId);
+      if (index > -1) {
+        this.transactions.splice(index, 1);
+        this.recalculateBalances();
+      }
+    }
+  }
+
+  // ===== CALCULS ET STATISTIQUES =====
+
+  getClientTransactions(): Transaction[] {
+    if (!this.selectedClientForSpreadsheet) return [];
+    return this.transactions
+      .filter(t => t.clientId === this.selectedClientForSpreadsheet!.id)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }
+
+  getFilteredTransactions(): Transaction[] {
+    let filtered = this.getClientTransactions();
+
+    // Filtrer par type
+    if (this.filterType) {
+      filtered = filtered.filter(t => t.type === this.filterType);
+    }
+
+    // Filtrer par terme de recherche
+    if (this.searchTerm) {
+      const term = this.searchTerm.toLowerCase();
+      filtered = filtered.filter(t => 
+        t.description.toLowerCase().includes(term) ||
+        t.reference?.toLowerCase().includes(term) ||
+        t.categorie?.toLowerCase().includes(term)
+      );
+    }
+
+    return filtered;
+  }
+
+  getClientBalance(): number {
+    const transactions = this.getClientTransactions();
+    return transactions.reduce((balance, transaction) => {
+      return transaction.type === 'entree' 
+        ? balance + transaction.montant 
+        : balance - transaction.montant;
+    }, 0);
+  }
+
+  getTotalEntrees(): number {
+    return this.getClientTransactions()
+      .filter(t => t.type === 'entree')
+      .reduce((sum, t) => sum + t.montant, 0);
+  }
+
+  getTotalSorties(): number {
+    return this.getClientTransactions()
+      .filter(t => t.type === 'sortie')
+      .reduce((sum, t) => sum + t.montant, 0);
+  }
+
+  getTransactionCount(): number {
+    return this.getClientTransactions().length;
+  }
+
+  getLastTransactionDate(): Date | null {
+    const transactions = this.getClientTransactions();
+    if (transactions.length === 0) return null;
+    
+    const sortedTransactions = transactions.sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    return new Date(sortedTransactions[0].date);
+  }
+
+  private recalculateBalances(): void {
+    if (!this.selectedClientForSpreadsheet) return;
+
+    const clientTransactions = this.transactions
+      .filter(t => t.clientId === this.selectedClientForSpreadsheet!.id)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    let runningBalance = 0;
+    clientTransactions.forEach(transaction => {
+      runningBalance += transaction.type === 'entree' 
+        ? transaction.montant 
+        : -transaction.montant;
+      transaction.soldeApres = runningBalance;
+    });
+  }
+
+  // ===== MÉTHODES UTILITAIRES =====
+
   formatSiret(siret: string): string {
     return siret.replace(/(\d{3})(\d{3})(\d{3})(\d{5})/, '$1 $2 $3 $4');
   }
 
-  // Méthode utilitaire pour formater le téléphone
   formatPhone(phone: string): string {
     return phone.replace(/(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, '$1.$2.$3.$4.$5');
   }
 
-  // Méthode pour supprimer un client (optionnel)
   deleteClient(clientId: number): void {
     const index = this.clients.findIndex(client => client.id === clientId);
     if (index > -1) {
@@ -148,19 +366,17 @@ export class ClientsComponent {
       if (this.selectedClient && this.selectedClient.id === clientId) {
         this.selectedClient = null;
       }
+      // Supprimer aussi les transactions associées
+      this.transactions = this.transactions.filter(t => t.clientId !== clientId);
     }
   }
 
-  // Méthode pour éditer un client (optionnel)
   editClient(client: Client): void {
     this.clientForm.patchValue(client);
     this.showAddForm = true;
-    // Vous pourriez ajouter une logique pour différencier l'ajout de l'édition
   }
 
-  // Validation personnalisée pour le SIRET
   private validateSiret(siret: string): boolean {
-    // Algorithme de validation SIRET basique
     if (!/^\d{14}$/.test(siret)) {
       return false;
     }
