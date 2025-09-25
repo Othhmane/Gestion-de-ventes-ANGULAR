@@ -1,0 +1,252 @@
+<div class="transactions-container" *ngIf="selectedClient">
+  <!-- Header avec infos client -->
+  <div class="spreadsheet-header">
+    <div class="client-info">
+      <button class="back-btn" (click)="goBack()">
+        <i class="icon-arrow-left"></i>
+        Retour aux clients
+      </button>
+      <div class="client-details">
+        <h2>{{ selectedClient.nomEntreprise }}</h2>
+        <p>Gestion des crédits et transactions</p>
+      </div>
+    </div>
+    
+    <div class="balance-summary">
+      <div class="balance-card positive" *ngIf="getClientBalance() >= 0">
+        <div class="balance-label">Solde créditeur</div>
+        <div class="balance-amount">+{{ getClientBalance() | number:'1.2-2' }}€</div>
+      </div>
+      <div class="balance-card negative" *ngIf="getClientBalance() < 0">
+        <div class="balance-label">Solde débiteur</div>
+        <div class="balance-amount">{{ getClientBalance() | number:'1.2-2' }}€</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Formulaire d'ajout de transaction -->
+  <div class="transaction-form-container">
+    <div class="form-toggle">
+      <button 
+        class="toggle-btn" 
+        [class.active]="showTransactionForm"
+        (click)="showTransactionForm = !showTransactionForm"
+      >
+        <i class="icon-plus"></i>
+        {{ showTransactionForm ? 'Masquer' : 'Nouvelle transaction' }}
+      </button>
+    </div>
+
+    <div class="transaction-form" [class.show]="showTransactionForm">
+      <form [formGroup]="transactionForm" (ngSubmit)="addTransaction()" class="form-grid-transaction">
+        <div class="form-group">
+          <label for="date">Date *</label>
+          <input 
+            id="date"
+            type="date" 
+            formControlName="date"
+            [class.error]="transactionForm.get('date')?.invalid && transactionForm.get('date')?.touched"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="type">Type *</label>
+          <select 
+            id="type"
+            formControlName="type"
+            [class.error]="transactionForm.get('type')?.invalid && transactionForm.get('type')?.touched"
+          >
+            <option value="">Sélectionner un type</option>
+            <option value="entree">Entrée d'argent (+)</option>
+            <option value="sortie">Sortie d'argent (-)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="montant">Montant *</label>
+          <input 
+            id="montant"
+            type="number" 
+            step="0.01"
+            min="0"
+            formControlName="montant"
+            placeholder="0.00"
+            [class.error]="transactionForm.get('montant')?.invalid && transactionForm.get('montant')?.touched"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description *</label>
+          <input 
+            id="description"
+            type="text" 
+            formControlName="description"
+            placeholder="Ex: Paiement facture, Remboursement..."
+            [class.error]="transactionForm.get('description')?.invalid && transactionForm.get('description')?.touched"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="categorie">Catégorie</label>
+          <select 
+            id="categorie"
+            formControlName="categorie"
+          >
+            <option value="">Sélectionner une catégorie</option>
+            <option value="facture">Facture</option>
+            <option value="paiement">Paiement</option>
+            <option value="remboursement">Remboursement</option>
+            <option value="avance">Avance</option>
+            <option value="penalite">Pénalité</option>
+            <option value="bonus">Bonus</option>
+            <option value="autre">Autre</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="reference">Référence</label>
+          <input 
+            id="reference"
+            type="text" 
+            formControlName="reference"
+            placeholder="Ex: FAC-2024-001"
+          >
+        </div>
+
+        <div class="form-actions-transaction">
+          <button type="button" class="btn-secondary" (click)="resetTransactionForm()">
+            Annuler
+          </button>
+          <button type="submit" class="btn-primary" [disabled]="!transactionForm.valid">
+            <i class="icon-save"></i>
+            Ajouter la transaction
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Tableau des transactions -->
+  <div class="transactions-table-container">
+    <div class="table-header">
+      <h3>Historique des transactions</h3>
+      <div class="table-filters">
+        <select [(ngModel)]="filterType" class="filter-select">
+          <option value="">Tous les types</option>
+          <option value="entree">Entrées</option>
+          <option value="sortie">Sorties</option>
+        </select>
+        <input 
+          type="text" 
+          [(ngModel)]="searchTerm" 
+          placeholder="Rechercher..." 
+          class="search-input"
+        >
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="transactions-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Catégorie</th>
+            <th>Référence</th>
+            <th>Montant</th>
+            <th>Solde</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let transaction of getFilteredTransactions(); let i = index" 
+              [class]="transaction.type">
+            <td>{{ transaction.date | date:'dd/MM/yyyy' }}</td>
+            <td>
+              <span class="type-badge" [class]="transaction.type">
+                {{ transaction.type === 'entree' ? 'Entrée' : 'Sortie' }}
+              </span>
+            </td>
+            <td>{{ transaction.description }}</td>
+            <td>
+              <span class="category-tag" *ngIf="transaction.categorie">
+                {{ transaction.categorie }}
+              </span>
+            </td>
+            <td>{{ transaction.reference || '-' }}</td>
+            <td class="montant" [class]="transaction.type">
+              {{ transaction.type === 'entree' ? '+' : '-' }}{{ transaction.montant | number:'1.2-2' }}€
+            </td>
+            <td class="solde" [class.positive]="transaction.soldeApres >= 0" [class.negative]="transaction.soldeApres < 0">
+              {{ transaction.soldeApres | number:'1.2-2' }}€
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-edit" (click)="editTransaction(transaction)" title="Modifier">
+                  <i class="icon-edit"></i>
+                </button>
+                <button class="btn-delete" (click)="deleteTransaction(transaction.id)" title="Supprimer">
+                  <i class="icon-delete"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="empty-state" *ngIf="getFilteredTransactions().length === 0">
+        <div class="empty-icon">📊</div>
+        <h4>Aucune transaction</h4>
+        <p>Commencez par ajouter votre première transaction pour ce client.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistiques -->
+  <div class="statistics-section">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-content">
+          <div class="stat-value">{{ getTotalEntrees() | number:'1.2-2' }}€</div>
+          <div class="stat-label">Total des entrées</div>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon">💸</div>
+        <div class="stat-content">
+          <div class="stat-value">{{ getTotalSorties() | number:'1.2-2' }}€</div>
+          <div class="stat-label">Total des sorties</div>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon">📈</div>
+        <div class="stat-content">
+          <div class="stat-value">{{ getTransactionCount() }}</div>
+          <div class="stat-label">Nombre de transactions</div>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon">📅</div>
+        <div class="stat-content">
+          <div class="stat-value">{{ getLastTransactionDate() | date:'dd/MM/yyyy' }}</div>
+          <div class="stat-label">Dernière transaction</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Message si aucun client sélectionné -->
+<div class="no-client" *ngIf="!selectedClient">
+  <div class="empty-icon">❌</div>
+  <h3>Client non trouvé</h3>
+  <p>Le client demandé n'existe pas ou a été supprimé.</p>
+  <button class="btn-primary" (click)="goBack()">
+    Retour aux clients
+  </button>
+</div>

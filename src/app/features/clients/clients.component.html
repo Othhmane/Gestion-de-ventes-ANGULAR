@@ -247,6 +247,8 @@
             Feuille de calcul
           </button>
           <button class="btn-details">Voir détails</button>
+          <button [routerLink]="['/clients', client.id]">Détails</button>
+<button [routerLink]="['/clients', client.id, 'transactions']">Transactions</button>
         </div>
       </div>
     </div>

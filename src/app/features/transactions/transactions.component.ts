@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 
 interface Client {
   id: number;
@@ -30,13 +31,22 @@ interface Transaction {
 }
 
 @Component({
-  selector: 'app-clients',
+  selector: 'app-transactions',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule],
-  templateUrl: './clients.component.html',
-  styleUrls: ['./clients.component.scss']
+  templateUrl: './transactions.component.html',
+  styleUrls: ['./transactions.component.scss']
 })
-export class ClientsComponent {
+export class TransactionsComponent {
+  selectedClient: Client | null = null;
+  transactionForm: FormGroup;
+  showTransactionForm: boolean = false;
+  
+  // Filtres pour les transactions
+  filterType: string = '';
+  searchTerm: string = '';
+
+  // Données de démonstration - tu peux les remplacer par un service
   clients: Client[] = [
     {
       id: 1,
@@ -79,7 +89,6 @@ export class ClientsComponent {
     }
   ];
 
-  // Données de démonstration pour les transactions
   transactions: Transaction[] = [
     {
       id: 1,
@@ -102,39 +111,40 @@ export class ClientsComponent {
       categorie: 'remboursement',
       reference: 'REM-001',
       soldeApres: 3500
+    },
+    {
+      id: 3,
+      clientId: 2,
+      date: '2024-01-10',
+      type: 'entree',
+      montant: 8000,
+      description: 'Contrat maintenance',
+      categorie: 'facture',
+      reference: 'MAINT-001',
+      soldeApres: 8000
     }
   ];
 
-  selectedClient: Client | null = null;
-  selectedClientForSpreadsheet: Client | null = null;
-  clientForm: FormGroup;
-  transactionForm: FormGroup;
-  showAddForm: boolean = false;
-  showSpreadsheet: boolean = false;
-  showTransactionForm: boolean = false;
-  
-  // Filtres pour les transactions
-  filterType: string = '';
-  searchTerm: string = '';
-
-  constructor(private fb: FormBuilder) {
-    this.clientForm = this.createClientForm();
+  constructor(
+    private fb: FormBuilder,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {
     this.transactionForm = this.createTransactionForm();
+    this.loadClientFromRoute();
   }
 
-  private createClientForm(): FormGroup {
-    return this.fb.group({
-      nomEntreprise: ['', [Validators.required, Validators.minLength(2)]],
-      secteurActivite: ['', Validators.required],
-      adresse: ['', [Validators.required, Validators.minLength(5)]],
-      ville: ['', [Validators.required, Validators.minLength(2)]],
-      codePostal: ['', [Validators.required, Validators.pattern(/^\d{5}$/)]],
-      pays: ['', Validators.required],
-      contactNom: ['', [Validators.required, Validators.minLength(2)]],
-      contactEmail: ['', [Validators.required, Validators.email]],
-      contactTelephone: ['', [Validators.required, Validators.pattern(/^0[1-9]\d{8}$/)]],
-      siret: ['', [Validators.required, Validators.pattern(/^\d{14}$/)]]
-    });
+  private loadClientFromRoute(): void {
+    const clientId = this.route.snapshot.paramMap.get('id');
+    if (clientId) {
+      const client = this.clients.find(c => c.id === parseInt(clientId));
+      if (client) {
+        this.selectedClient = client;
+      } else {
+        // Client non trouvé, rediriger vers la liste
+        this.router.navigate(['/clients']);
+      }
+    }
   }
 
   private createTransactionForm(): FormGroup {
@@ -149,70 +159,22 @@ export class ClientsComponent {
     });
   }
 
-  addClient(): void {
-    if (this.clientForm.valid) {
-      const newClient: Client = {
-        ...this.clientForm.value,
-        id: Date.now()
-      };
-      
-      this.clients.push(newClient);
-      this.clientForm.reset();
-      this.showAddForm = false;
-      
-      console.log('Client ajouté avec succès:', newClient);
-    } else {
-      this.markFormGroupTouched();
-    }
-  }
+  // ===== NAVIGATION =====
 
-  private markFormGroupTouched(): void {
-    Object.keys(this.clientForm.controls).forEach(key => {
-      const control = this.clientForm.get(key);
-      if (control) {
-        control.markAsTouched();
-      }
-    });
-  }
-
-  showDetails(client: Client): void {
-    this.selectedClient = client;
-  }
-
-  closeDetails(): void {
-    this.selectedClient = null;
-  }
-
-  cancelForm(): void {
-    this.clientForm.reset();
-    this.showAddForm = false;
-  }
-
-  // ===== GESTION DES FEUILLES DE CALCUL =====
-
-  openSpreadsheet(client: Client): void {
-    this.selectedClientForSpreadsheet = client;
-    this.showSpreadsheet = true;
-    this.showTransactionForm = false;
-    this.resetTransactionForm();
-  }
-
-  closeSpreadsheet(): void {
-    this.showSpreadsheet = false;
-    this.selectedClientForSpreadsheet = null;
-    this.showTransactionForm = false;
+  goBack(): void {
+    this.router.navigate(['/clients']);
   }
 
   // ===== GESTION DES TRANSACTIONS =====
 
   addTransaction(): void {
-    if (this.transactionForm.valid && this.selectedClientForSpreadsheet) {
+    if (this.transactionForm.valid && this.selectedClient) {
       const formValue = this.transactionForm.value;
       const currentBalance = this.getClientBalance();
       
       const newTransaction: Transaction = {
         id: Date.now(),
-        clientId: this.selectedClientForSpreadsheet.id,
+        clientId: this.selectedClient.id,
         date: formValue.date,
         type: formValue.type,
         montant: parseFloat(formValue.montant),
@@ -246,7 +208,6 @@ export class ClientsComponent {
   }
 
   editTransaction(transaction: Transaction): void {
-    // Logique pour éditer une transaction
     this.transactionForm.patchValue({
       date: transaction.date,
       type: transaction.type,
@@ -271,21 +232,19 @@ export class ClientsComponent {
   // ===== CALCULS ET STATISTIQUES =====
 
   getClientTransactions(): Transaction[] {
-    if (!this.selectedClientForSpreadsheet) return [];
+    if (!this.selectedClient) return [];
     return this.transactions
-      .filter(t => t.clientId === this.selectedClientForSpreadsheet!.id)
+      .filter(t => t.clientId === this.selectedClient!.id)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }
 
   getFilteredTransactions(): Transaction[] {
     let filtered = this.getClientTransactions();
 
-    // Filtrer par type
     if (this.filterType) {
       filtered = filtered.filter(t => t.type === this.filterType);
     }
 
-    // Filtrer par terme de recherche
     if (this.searchTerm) {
       const term = this.searchTerm.toLowerCase();
       filtered = filtered.filter(t => 
@@ -334,10 +293,10 @@ export class ClientsComponent {
   }
 
   private recalculateBalances(): void {
-    if (!this.selectedClientForSpreadsheet) return;
+    if (!this.selectedClient) return;
 
     const clientTransactions = this.transactions
-      .filter(t => t.clientId === this.selectedClientForSpreadsheet!.id)
+      .filter(t => t.clientId === this.selectedClient!.id)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     let runningBalance = 0;
@@ -347,52 +306,5 @@ export class ClientsComponent {
         : -transaction.montant;
       transaction.soldeApres = runningBalance;
     });
-  }
-
-  // ===== MÉTHODES UTILITAIRES =====
-
-  formatSiret(siret: string): string {
-    return siret.replace(/(\d{3})(\d{3})(\d{3})(\d{5})/, '$1 $2 $3 $4');
-  }
-
-  formatPhone(phone: string): string {
-    return phone.replace(/(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, '$1.$2.$3.$4.$5');
-  }
-
-  deleteClient(clientId: number): void {
-    const index = this.clients.findIndex(client => client.id === clientId);
-    if (index > -1) {
-      this.clients.splice(index, 1);
-      if (this.selectedClient && this.selectedClient.id === clientId) {
-        this.selectedClient = null;
-      }
-      // Supprimer aussi les transactions associées
-      this.transactions = this.transactions.filter(t => t.clientId !== clientId);
-    }
-  }
-
-  editClient(client: Client): void {
-    this.clientForm.patchValue(client);
-    this.showAddForm = true;
-  }
-
-  private validateSiret(siret: string): boolean {
-    if (!/^\d{14}$/.test(siret)) {
-      return false;
-    }
-    
-    let sum = 0;
-    for (let i = 0; i < 14; i++) {
-      let digit = parseInt(siret.charAt(i));
-      if (i % 2 === 1) {
-        digit *= 2;
-        if (digit > 9) {
-          digit = digit.toString().split('').map(Number).reduce((a, b) => a + b, 0);
-        }
-      }
-      sum += digit;
-    }
-    
-    return sum % 10 === 0;
   }
 }
