@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { CalculComponent } from './calcul.component';
+import { CalculComponent } from './transactions.component';
 
 describe('CalculComponent', () => {
   let component: CalculComponent;
