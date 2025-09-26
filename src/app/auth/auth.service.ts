@@ -18,10 +18,11 @@ export class AuthService {
   private currentUser: User | null = null;
 
   constructor() {
-    // Charger session depuis le stockage
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      this.currentUser = JSON.parse(savedUser);
+    if (this.hasWindow()) {
+      const savedUser = localStorage.getItem('currentUser');
+      if (savedUser) {
+        this.currentUser = JSON.parse(savedUser);
+      }
     }
   }
 
@@ -29,7 +30,9 @@ export class AuthService {
     const user = this.users.find(u => u.username === username && u.password === password);
     if (user) {
       this.currentUser = user;
-      localStorage.setItem('currentUser', JSON.stringify(user));
+      if (this.hasWindow()) {
+        localStorage.setItem('currentUser', JSON.stringify(user));
+      }
       return true;
     }
     return false;
@@ -39,7 +42,6 @@ export class AuthService {
     const exists = this.users.find(u => u.username === user.username);
     if (exists) return false;
 
-    // Tous les nouveaux utilisateurs ont le rôle "user"
     const newUser: User = { ...user, role: 'user' };
     this.users.push(newUser);
     return true;
@@ -47,7 +49,9 @@ export class AuthService {
 
   logout(): void {
     this.currentUser = null;
-    localStorage.removeItem('currentUser');
+    if (this.hasWindow()) {
+      localStorage.removeItem('currentUser');
+    }
   }
 
   getCurrentUser(): User | null {
@@ -60,5 +64,10 @@ export class AuthService {
 
   isAdmin(): boolean {
     return this.currentUser?.role === 'admin';
+  }
+
+  // ✅ utilitaire pour éviter l'erreur hors navigateur
+  private hasWindow(): boolean {
+    return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
   }
 }
