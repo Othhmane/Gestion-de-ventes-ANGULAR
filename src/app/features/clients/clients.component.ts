@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ClientService, Client } from './clients.service';
+import { AuthService } from '../../auth/auth.service';
 
 @Component({
   selector: 'app-clients',
@@ -118,6 +119,22 @@ import { ClientService, Client } from './clients.service';
                     Email invalide
                   </span>
                 </div>
+
+                <!-- ✅ NOUVEAU CHAMP MOT DE PASSE -->
+                <div class="form-group">
+                  <label for="contactPassword">Mot de passe de connexion *</label>
+                  <input 
+                    id="contactPassword"
+                    type="password" 
+                    formControlName="contactPassword"
+                    placeholder="Mot de passe pour se connecter"
+                    [class.error]="clientForm.get('contactPassword')?.invalid && clientForm.get('contactPassword')?.touched"
+                  >
+                  <span class="help-text">Ce mot de passe permettra au client de se connecter avec son email</span>
+                  <span class="error-message" *ngIf="clientForm.get('contactPassword')?.invalid && clientForm.get('contactPassword')?.touched">
+                    Le mot de passe est requis (minimum 4 caractères)
+                  </span>
+                </div>
                 
                 <div class="form-group">
                   <label for="contactTelephone">Téléphone *</label>
@@ -205,6 +222,12 @@ import { ClientService, Client } from './clients.service';
         </div>
       </div>
 
+      <!-- Message de succès -->
+      <div class="success-message" *ngIf="successMessage" [class.show]="successMessage">
+        <i class="icon-check"></i>
+        {{ successMessage }}
+      </div>
+
       <!-- Liste des clients -->
       <div class="clients-grid">
         <div class="client-card" *ngFor="let client of clients()" (click)="viewClient(client.id)">
@@ -271,6 +294,7 @@ export class ClientsComponent {
   private clientService = inject(ClientService);
   private fb = inject(FormBuilder);
   private router = inject(Router);
+  private authService = inject(AuthService);
 
   // Signals
   clients = this.clientService.all;
@@ -279,6 +303,7 @@ export class ClientsComponent {
   // Form
   clientForm: FormGroup;
   showAddForm = false;
+  successMessage = '';
 
   constructor() {
     this.clientForm = this.createClientForm();
@@ -294,24 +319,49 @@ export class ClientsComponent {
       pays: ['', Validators.required],
       contactNom: ['', [Validators.required, Validators.minLength(2)]],
       contactEmail: ['', [Validators.required, Validators.email]],
+      contactPassword: ['', [Validators.required, Validators.minLength(4)]],
       contactTelephone: ['', [Validators.required, Validators.pattern(/^0[1-9]\d{8}$/)]],
       siret: ['', [Validators.required, Validators.pattern(/^\d{14}$/)]]
     });
   }
 
-addClient(): void {
-  if (this.clientForm.valid) {
-    const newClient = this.clientService.add(this.clientForm.value);
-    console.log('Nouveau client créé avec ID:', newClient.id); // debug
+  addClient(): void {
+    if (this.clientForm.valid) {
+      const formData = this.clientForm.value;
+      
+      // ✅ 1. Créer le client dans ton service existant
+      const newClient = this.clientService.add(formData);
+      console.log('Nouveau client créé avec ID:', newClient.id);
 
-    this.clientForm.reset();
-    this.showAddForm = false;
-    this.router.navigate(['/clients', newClient.id, 'transactions']);
-  } else {
-    this.markFormGroupTouched();
+      // ✅ 2. Créer les identifiants de connexion dans AuthService (CORRIGÉ - avec l'ID)
+      const authData = {
+        id: newClient.id, // ← AJOUT DE L'ID
+        name: formData.contactNom,
+        email: formData.contactEmail,
+        password: formData.contactPassword
+      };
+
+      if (this.authService.createClient(authData)) {
+        // Succès : client créé + identifiants enregistrés
+        this.successMessage = `✅ Client "${formData.nomEntreprise}" créé avec succès ! 
+                              Login: ${formData.contactEmail} / ${formData.contactPassword}`;
+        
+        // Efface le message après 5 secondes
+        setTimeout(() => {
+          this.successMessage = '';
+        }, 5000);
+
+        this.clientForm.reset();
+        this.showAddForm = false;
+        this.router.navigate(['/clients', newClient.id, 'transactions']);
+      } else {
+        // Erreur : email déjà existant dans AuthService
+        alert('⚠️ Erreur : Cet email existe déjà dans le système de connexion');
+      }
+    } else {
+      this.markFormGroupTouched();
+    }
   }
-  
-}
 
   private markFormGroupTouched(): void {
     Object.keys(this.clientForm.controls).forEach(key => {
@@ -325,6 +375,7 @@ addClient(): void {
   cancelForm(): void {
     this.clientForm.reset();
     this.showAddForm = false;
+    this.successMessage = '';
   }
 
   viewClient(clientId: number): void {

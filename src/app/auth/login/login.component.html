@@ -1,18 +1,46 @@
-<div class="login-container">
-  <div class="login-card">
-    <h2>Login</h2>
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+<div class="login-page">
+  <div class="login-wrapper">
+    <div class="brand">
+      <i class="icon-lock"></i>
+      <h1>SecureBank</h1>
+      <p class="subtitle">Connectez-vous à votre espace</p>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
       <div class="form-group">
-        <label>Username</label>
-        <input formControlName="username">
+        <label for="identifier">Email ou nom d'utilisateur</label>
+        <div class="input-wrapper">
+          <i class="icon-user"></i>
+          <input 
+            id="identifier" 
+            type="text" 
+            formControlName="identifier" 
+            placeholder="admin ou votre@email.com"
+          >
+        </div>
       </div>
+      
       <div class="form-group">
-        <label>Password</label>
-        <input type="password" formControlName="password">
+        <label for="password">Mot de passe</label>
+        <div class="input-wrapper">
+          <i class="icon-key"></i>
+          <input 
+            id="password" 
+            type="password" 
+            formControlName="password"
+            placeholder="Votre mot de passe"
+          >
+        </div>
       </div>
-      <button type="submit">Login</button>
+      
+      <button type="submit" [disabled]="loginForm.invalid">🚀 Se connecter</button>
+      
+      <div *ngIf="error" class="error">{{ error }}</div>
     </form>
-    <p *ngIf="error" class="error">{{ error }}</p>
-    <a routerLink="/register" class="register-link">Créer un compte</a>
+
+    <div class="help-text">
+      <p><strong>Test Admin :</strong> admin / admin</p>
+      <p><strong>Clients :</strong> Utilisez l'email et mot de passe créés par l'admin</p>
+    </div>
   </div>
 </div>

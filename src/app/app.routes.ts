@@ -4,6 +4,7 @@ import { ClientDetailComponent } from './features/clients/client-detail.componen
 import { TransactionsComponent } from './features/transactions/transactions.component';
 import { AuthGuard } from './auth/auth.guards';
 import { AdminGuard } from './auth/admin.guard'; // <--- ajoute ça
+import { ClientGuard } from './features/clients/client.guard'; // ← Ajoute ça
 
 
 // Importe tes composants Login et Register
@@ -15,41 +16,42 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
 
-  // Routes protégées par AuthGuard
+  // ✅ Liste des clients (admin seulement)
   {
     path: 'clients',
     component: ClientsComponent,
-    canActivate: [AuthGuard]
+    canActivate: [AdminGuard] // ← Seul admin peut voir la liste
   },
+
+  // ✅ Transactions d'un client spécifique
   {
     path: 'clients/:id/transactions',
     component: TransactionsComponent,
-    canActivate: [AuthGuard]
+    canActivate: [ClientGuard] // ← Admin OU client propriétaire
   },
-  {
-    path: ':id/transactions',
-    component: TransactionsComponent,
-    canActivate: [AuthGuard]
-  },
+
+  // ✅ Détail d'un client (admin seulement)
   {
     path: 'clients/:id',
     component: ClientDetailComponent,
-    canActivate: [AuthGuard]
+    canActivate: [AdminGuard] // ← Seul admin
   },
   
   // Route protégée par AdminGuard
-  {
-path: 'admin',
-    loadComponent: () =>
-      import('./admin/admin.component').then(m => m.AdminComponent),
-    canActivate: [AdminGuard]   // 🔐 Protégé uniquement admin
-  },
-  // Route par défaut
+  //{
+    //path: 'admin',
+    //loadComponent: () =>
+     // import('./admin/admin.component').then(m => m.AdminComponent),
+   // canActivate: [AdminGuard]   // 🔐 Protégé uniquement admin
+ // },
+
+  // Redirection selon le rôle
   {
     path: '',
-    redirectTo: 'clients', // Redirige vers 'clients' si connecté, sinon AuthGuard redirigera vers 'login'
+    redirectTo: '/login', // Tout le monde va d'abord au login
     pathMatch: 'full'
   },
-  // Route wildcard pour les chemins non trouvés (optionnel, mais bonne pratique)
-  { path: '**', redirectTo: 'clients' } // Ou vers une page 404
+
+  // Route wildcard pour les chemins non trouvés
+  { path: '**', redirectTo: '/login' }
 ];
