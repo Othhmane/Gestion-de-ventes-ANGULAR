@@ -1,40 +1,64 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+
+export interface User {
+  username: string;
+  password: string;
+  role: 'user' | 'admin';
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private isLoggedIn = new BehaviorSubject<boolean>(false);
-  public loggedIn$ = this.isLoggedIn.asObservable();
+  private users: User[] = [
+    { username: 'admin', password: 'admin', role: 'admin' },
+    { username: 'user', password: 'user', role: 'user' }
+  ];
 
-  private users: any[] = []; // stocke les utilisateurs en mémoire
+  private currentUser: User | null = null;
 
-  constructor() { }
+  constructor() {
+    // Charger session depuis le stockage
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedUser) {
+      this.currentUser = JSON.parse(savedUser);
+    }
+  }
 
-register(user: {username: string, password: string, role?: string}) {
-  const exists = this.users.find(u => u.username === user.username);
-  if (exists) return false;
-  this.users.push({ ...user, role: user.role || 'user' }); // Ajoute le rôle
-  return true;
-}
+  login(username: string, password: string): boolean {
+    const user = this.users.find(u => u.username === username && u.password === password);
+    if (user) {
+      this.currentUser = user;
+      localStorage.setItem('currentUser', JSON.stringify(user));
+      return true;
+    }
+    return false;
+  }
 
-login(username: string, password: string): boolean {
-  const user = this.users.find(u => u.username === username && u.password === password);
-  if (user) {
-    localStorage.setItem('user', JSON.stringify(user)); // Stocke l'utilisateur avec le rôle
-    this.isLoggedIn.next(true);
+  register(user: { username: string; password: string }): boolean {
+    const exists = this.users.find(u => u.username === user.username);
+    if (exists) return false;
+
+    // Tous les nouveaux utilisateurs ont le rôle "user"
+    const newUser: User = { ...user, role: 'user' };
+    this.users.push(newUser);
     return true;
   }
-  return false;
-}
 
-  logout() {
-    this.isLoggedIn.next(false);
+  logout(): void {
+    this.currentUser = null;
+    localStorage.removeItem('currentUser');
+  }
+
+  getCurrentUser(): User | null {
+    return this.currentUser;
+  }
+
+  isLoggedIn(): boolean {
+    return this.currentUser !== null;
   }
 
   isAdmin(): boolean {
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  return user.role === 'admin';
-}
+    return this.currentUser?.role === 'admin';
+  }
 }

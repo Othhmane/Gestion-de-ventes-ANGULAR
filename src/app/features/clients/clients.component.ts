@@ -299,15 +299,19 @@ export class ClientsComponent {
     });
   }
 
-  addClient(): void {
-    if (this.clientForm.valid) {
-      this.clientService.add(this.clientForm.value);
-      this.clientForm.reset();
-      this.showAddForm = false;
-    } else {
-      this.markFormGroupTouched();
-    }
+addClient(): void {
+  if (this.clientForm.valid) {
+    const newClient = this.clientService.add(this.clientForm.value);
+    console.log('Nouveau client créé avec ID:', newClient.id); // debug
+
+    this.clientForm.reset();
+    this.showAddForm = false;
+    this.router.navigate(['/clients', newClient.id, 'transactions']);
+  } else {
+    this.markFormGroupTouched();
   }
+  
+}
 
   private markFormGroupTouched(): void {
     Object.keys(this.clientForm.controls).forEach(key => {
