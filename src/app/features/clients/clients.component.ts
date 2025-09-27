@@ -11,17 +11,18 @@ import { AuthService } from '../../auth/auth.service';
   imports: [CommonModule, ReactiveFormsModule],
   template: `
     <div class="clients-container">
+          <button class="btn-primary" (click)="logout()">
+            <i class="icon-"></i> Déconnexion
+          </button>
       <div class="header">
         <h1>Gestion des Clients</h1>
-        <div class="header-stats">
-          <span class="stat">Total: {{ totalClients() }}</span>
-        </div>
-        <button class="btn-primary" (click)="showAddForm = !showAddForm">
+          <button class="btn-primary" (click)="showAddForm = !showAddForm">
           <i class="icon-plus"></i>
           {{ showAddForm ? 'Annuler' : 'Nouveau Client' }}
         </button>
-      </div>
-
+        <div class="header-stats">
+        </div>
+      </div>  
       <!-- Formulaire d'ajout -->
       <div class="form-container" [class.show]="showAddForm">
         <div class="form-card">
@@ -385,4 +386,9 @@ export class ClientsComponent {
   openTransactions(clientId: number): void {
     this.router.navigate(['/clients', clientId, 'transactions']);
   }
+
+  logout(): void {
+  this.authService.logout();
+  this.router.navigate(['/login']); // retour à la page de login
+}
 }

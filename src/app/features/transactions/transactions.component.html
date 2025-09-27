@@ -2,14 +2,20 @@
   <!-- Header avec infos client -->
   <div class="spreadsheet-header">
     <div class="client-info">
-      <button class="back-btn" (click)="goBack()">
-        <i class="icon-arrow-left"></i>
-        Retour aux clients
-      </button>
+
       <div class="client-details">
         <h2>{{ selectedClient.nomEntreprise }}</h2>
         <p>Gestion des crédits et transactions</p>
+              <button class="back-btn" (click)="logout()">
+        <i class="icon-arrow-left"></i>
+        Deconnexion
+      </button>
       </div>
+<button class="back-btn" *ngIf="isAdmin" (click)="goBack()">
+          <i class="icon-arrow-left"></i>
+        Retour aux clients
+      </button>
+
     </div>
     
     <div class="balance-summary">
@@ -20,7 +26,9 @@
       <div class="balance-card negative" *ngIf="getClientBalance() < 0">
         <div class="balance-label">Solde débiteur</div>
         <div class="balance-amount">{{ getClientBalance() | number:'1.2-2' }}€</div>
+        
       </div>
+      
     </div>
   </div>
 

@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ClientService, Client } from '../clients/clients.service';
 import { TransactionService, Transaction } from './transaction.service';
+import { AuthService } from '../../auth/auth.service';
 
 @Component({
   selector: 'app-transactions',
@@ -20,11 +21,23 @@ export class TransactionsComponent {
   private fb = inject(FormBuilder);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private authService = inject(AuthService);
+
+  logout(): void {
+  this.authService.logout();
+  this.router.navigate(['/login']); // redirige vers la page login
+}
+
+get isAdmin(): boolean {
+    return this.authService.isAdmin();
+  }
 
   selectedClient: Client | null = null;
   clientId: number = 0;
   transactionForm: FormGroup;
   showTransactionForm: boolean = false;
+
+  
   
   // Filtres pour les transactions
   filterType: string = '';

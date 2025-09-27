@@ -77,20 +77,20 @@ createClient(userData: { id: number; name: string; email: string; password: stri
     return this.users.filter(u => u.role === 'user');
   }
 
-  logout(): void {
+logout(): void {
     this.currentUser = null;
-    if (this.hasWindow()) {
-      localStorage.removeItem('currentUser');
-    }
+    localStorage.removeItem('user'); // si tu stockes en localStorage
+  }
+
+  isLoggedIn(): boolean {
+    return !!this.currentUser;
   }
 
   getCurrentUser(): User | null {
     return this.currentUser;
   }
 
-  isLoggedIn(): boolean {
-    return this.currentUser !== null;
-  }
+
 
   isAdmin(): boolean {
     return this.currentUser?.role === 'admin';
