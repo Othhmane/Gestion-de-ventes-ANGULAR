@@ -1,92 +1,119 @@
-# GestionVentes
+```markdown
+# 🧾 GestionVentes – Application Angular
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.17.
+Application de **gestion de clients et transactions** développée en **Angular 20** (CLI 19.2.17) dans le cadre du projet final de 5ème année.
 
-## Development server
+---
 
-To start a local development server, run:
+## ✨ Fonctionnalités
 
+### 👨‍💼 **Admin**
+- Créer des clients et gérer leurs informations.  
+- Ajouter, modifier et supprimer des transactions.
+
+### 👤 **Clients**
+- Se connecter avec leurs identifiants.  
+- Consulter uniquement leurs transactions personnelles.
+
+---
+
+## 🛠️ **Installation & Lancement**
+
+### 1️⃣ Cloner le projet
+```bash
+git clone <url-du-repo>
+cd GestionVentes
+```
+
+### 2️⃣ Installer les dépendances
+```bash
+npm install
+```
+
+### 3️⃣ Lancer l’application
 ```bash
 ng serve -o
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+➡️ L’application sera accessible sur [http://localhost:4200/](http://localhost:4200/)  
+➡️ Le navigateur s’ouvrira automatiquement.
 
-## Code scaffolding
+---
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## 🔑 **Identifiants par défaut**
 
-```bash
-ng generate component component-name
-```
+**Admin :**  
+- Username : `admin`  
+- Password : `admin`
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+> ⚡ L’admin peut créer de nouveaux clients avec un **email** et un **mot de passe**.  
+> Ces identifiants permettent ensuite aux clients de se connecter et de voir leurs propres transactions.
 
-```bash
-ng generate --help
-```
+---
 
-## Building
-
-To build the project run:
+## 📂 **Structure du projet**
 
 ```bash
-ng build
+src/app/
+├── auth/                # Authentification & Guards
+│   ├── login/           # Composant de login
+│   ├── admin.guard.ts   # Protection Admin
+│   └── auth.service.ts  # Service d’auth
+│
+├── features/
+│   ├── clients/         # Gestion des clients
+│   │   ├── clients.component.ts
+│   │   ├── clients.service.ts
+│   │   └── client.guard.ts
+│   └── transactions/    # Gestion des transactions
+│       ├── transactions.component.ts
+│       └── transaction.service.ts
+│
+├── app.routes.ts        # Définition des routes (guards inclus)
+├── app.config.ts        # Configuration globale
+└── app.component.ts     # Composant racine
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+---
 
-## Running unit tests
+## ✅ **Fonctionnalités Implémentées**
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+### 🔐 Authentification & Autorisation
+- Login **admin** & **client**  
+- Guards : `AdminGuard`, `ClientGuard`  
+- Persistance de session via **localStorage**
 
-```bash
-ng test
+### 📝 Gestion des Clients (Admin)
+- CRUD complet (création, liste, suppression)  
+- Formulaire réactif avec validations (email, SIRET, téléphone)
+
+### 💳 Transactions
+- **Admin** : ajout / modification / suppression  
+- **Client** : consultation de ses transactions uniquement  
+- Calcul automatique du **solde** via Angular **Signals**
+
+### ⚡ Gestion d’État
+- Signals `writable` et `computed`  
+- Réactivité instantanée de l’interface
+
+### 🎨 Interface Utilisateur
+- **Tailwind CSS** pour le design  
+- Responsive design (desktop & mobile)  
+- Feedback utilisateur (messages de succès, erreurs)
+
+---
+
+## 📌 **Technologies utilisées**
+
+- Angular 20  
+- TypeScript  
+- Tailwind CSS  
+- Angular Signals  
+- LocalStorage
+
+---
+
+## 👨‍💻 **Auteur**
+
+Projet réalisé par **Othmane Haddouche** – 5ème année d’ingénierie.
 ```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
-
-
-
-
-
-src/
- └── app/
-      ├── shared/                # Composants réutilisables simples
-      │    ├── components/       # Header, Footer
-      │    ├── pipes/            # Pipe personnalisé (currency)
-      │    └── directives/       # Directive personnalisée (stock faible)
-      │
-      ├── produits/              # Module Produits
-      │    ├── produit-list.component.ts
-      │    ├── produit-form.component.ts
-      │    └── produits.service.ts
-      │
-      ├── clients/               # Module Clients
-      │    ├── client-list.component.ts
-      │    ├── client-form.component.ts
-      │    └── clients.service.ts
-      │
-      ├── ventes/                # Module Ventes
-      │    ├── vente-list.component.ts
-      │    ├── vente-form.component.ts
-      │    └── ventes.service.ts
-      │
-      ├── portefeuille/          # Module Portefeuille
-      │    └── solde.component.ts
-      │
-      ├── app-routing.module.ts  # Définition des routes principales
-      ├── app.component.ts       # Composant racine
-      └── app.module.ts          # Module principal
