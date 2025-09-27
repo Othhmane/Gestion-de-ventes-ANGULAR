@@ -79,7 +79,7 @@ createClient(userData: { id: number; name: string; email: string; password: stri
 
 logout(): void {
     this.currentUser = null;
-    localStorage.removeItem('user'); // si tu stockes en localStorage
+    localStorage.removeItem('currentUser'); // si tu stockes en localStorage
   }
 
   isLoggedIn(): boolean {

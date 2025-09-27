@@ -52,7 +52,25 @@ export class TransactionService {
 
   all = this.transactions.asReadonly();
 
-  // Computed pour un client spécifique
+  constructor() {
+    this.loadFromStorage();
+  }
+
+  // ===== Persistance =====
+  private loadFromStorage(): void {
+    const stored = localStorage.getItem('transactions');
+    if (stored) {
+      this.transactions.set(JSON.parse(stored));
+    } else {
+      this.saveToStorage(); // première sauvegarde des transactions mockées
+    }
+  }
+
+  private saveToStorage(): void {
+    localStorage.setItem('transactions', JSON.stringify(this.transactions()));
+  }
+
+  // ===== SELECTEURS =====
   getClientTransactions(clientId: number) {
     return computed(() => 
       this.transactions()
@@ -61,7 +79,6 @@ export class TransactionService {
     );
   }
 
-  // Computed pour le solde d'un client
   getClientBalance(clientId: number) {
     return computed(() => {
       return this.transactions()
@@ -74,7 +91,6 @@ export class TransactionService {
     });
   }
 
-  // Statistiques pour un client
   getClientStats(clientId: number) {
     return computed(() => {
       const clientTransactions = this.transactions().filter(t => t.clientId === clientId);
@@ -94,7 +110,7 @@ export class TransactionService {
     });
   }
 
-  // CRUD Operations
+  // ===== CRUD =====
   add(transaction: Omit<Transaction, 'id' | 'soldeApres'>) {
     const currentBalance = this.getClientBalance(transaction.clientId)();
     const newTransaction: Transaction = {
@@ -107,6 +123,7 @@ export class TransactionService {
 
     this.transactions.update(list => [...list, newTransaction]);
     this.recalculateBalances(transaction.clientId);
+    this.saveToStorage(); // ✅ persistance
     return newTransaction;
   }
 
@@ -118,6 +135,7 @@ export class TransactionService {
       list.map(t => t.id === id ? { ...t, ...updates } : t)
     );
     this.recalculateBalances(transaction.clientId);
+    this.saveToStorage(); // ✅ persistance
   }
 
   delete(id: number) {
@@ -126,8 +144,10 @@ export class TransactionService {
 
     this.transactions.update(list => list.filter(t => t.id !== id));
     this.recalculateBalances(transaction.clientId);
+    this.saveToStorage(); // ✅ persistance
   }
 
+  // recalcul des soldes pour un client donné
   private recalculateBalances(clientId: number): void {
     const clientTransactions = this.transactions()
       .filter(t => t.clientId === clientId)
@@ -148,5 +168,6 @@ export class TransactionService {
     });
 
     this.transactions.set(updatedTransactions);
+    this.saveToStorage(); // ✅ persistance après recalcul
   }
 }

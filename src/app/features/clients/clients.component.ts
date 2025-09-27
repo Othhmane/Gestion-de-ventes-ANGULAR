@@ -240,7 +240,10 @@ import { AuthService } from '../../auth/auth.service';
               </span>
             </div>
             <div class="card-menu">
-              <button class="menu-btn" (click)="$event.stopPropagation()">⋯</button>
+<button class="btn-delete" (click)="deleteClient(client.id); $event.stopPropagation()">
+  <i class="icon-trash"></i>
+  Supprimer
+</button>
             </div>
           </div>
 
@@ -280,6 +283,8 @@ import { AuthService } from '../../auth/auth.service';
                 <i class="icon-spreadsheet"></i>
                 Transactions
               </button>
+
+
               <button class="btn-details" (click)="viewClient(client.id); $event.stopPropagation()">
                 Voir détails
               </button>
@@ -325,6 +330,18 @@ export class ClientsComponent {
       siret: ['', [Validators.required, Validators.pattern(/^\d{14}$/)]]
     });
   }
+
+deleteClient(clientId: number): void {
+  if (confirm("⚠️ Voulez-vous vraiment supprimer ce client ?")) {
+    this.clientService.delete(clientId);
+
+    // Optionnel : message de succès
+    this.successMessage = "✅ Client supprimé avec succès !";
+    setTimeout(() => {
+      this.successMessage = '';
+    }, 3000);
+  }
+}
 
   addClient(): void {
     if (this.clientForm.valid) {

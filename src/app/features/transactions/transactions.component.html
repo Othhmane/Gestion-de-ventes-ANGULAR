@@ -40,7 +40,7 @@
         [class.active]="showTransactionForm"
         (click)="showTransactionForm = !showTransactionForm"
       >
-        <i class="icon-plus"></i>
+        <i class="icon-plus" *ngIf="isAdmin"></i>
         {{ showTransactionForm ? 'Masquer' : 'Nouvelle transaction' }}
       </button>
     </div>

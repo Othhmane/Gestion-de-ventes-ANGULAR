@@ -2,54 +2,41 @@ import { Routes } from '@angular/router';
 import { ClientsComponent } from './features/clients/clients.component';
 import { ClientDetailComponent } from './features/clients/client-detail.component';
 import { TransactionsComponent } from './features/transactions/transactions.component';
-import { AuthGuard } from './auth/auth.guards';
-import { AdminGuard } from './auth/admin.guard'; // <--- ajoute ça
-import { ClientGuard } from './features/clients/client.guard'; // ← Ajoute ça
+import { LoginComponent } from './auth/login/login.component';
 
-
-// Importe tes composants Login et Register
-import { LoginComponent } from './auth/login/login.component'; // <-- Assure-toi du bon chemin
+import { AdminGuard } from './auth/admin.guard';
+import { ClientGuard } from './features/clients/client.guard';
 
 export const routes: Routes = [
-  // Routes publiques (accessibles sans être connecté)
+  // 🔓 Routes publiques
   { path: 'login', component: LoginComponent },
 
-  // ✅ Liste des clients (admin seulement)
+  // 🔐 Routes protégées
+
+  // Liste des clients → Admin uniquement
   {
     path: 'clients',
     component: ClientsComponent,
-    canActivate: [AdminGuard] // ← Seul admin peut voir la liste
+    canActivate: [AdminGuard]
   },
 
-  // ✅ Transactions d'un client spécifique
+  // Transactions → Admin OU client propriétaire
   {
     path: 'clients/:id/transactions',
     component: TransactionsComponent,
-    canActivate: [ClientGuard] // ← Admin OU client propriétaire
+    canActivate: [ClientGuard]
   },
 
-  // ✅ Détail d'un client (admin seulement)
+  // Détail d’un client → Admin uniquement
   {
     path: 'clients/:id',
     component: ClientDetailComponent,
-    canActivate: [AdminGuard] // ← Seul admin
-  },
-  
-  // Route protégée par AdminGuard
-  //{
-    //path: 'admin',
-    //loadComponent: () =>
-     // import('./admin/admin.component').then(m => m.AdminComponent),
-   // canActivate: [AdminGuard]   // 🔐 Protégé uniquement admin
- // },
-
-  // Redirection selon le rôle
-  {
-    path: '',
-    redirectTo: '/login', // Tout le monde va d'abord au login
-    pathMatch: 'full'
+    canActivate: [AdminGuard]
   },
 
-  // Route wildcard pour les chemins non trouvés
+  // Redirection défaut → login
+  { path: '', redirectTo: '/login', pathMatch: 'full' },
+
+  // Routes inconnues
   { path: '**', redirectTo: '/login' }
 ];
