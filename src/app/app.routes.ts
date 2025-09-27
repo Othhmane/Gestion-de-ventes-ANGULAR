@@ -9,12 +9,10 @@ import { ClientGuard } from './features/clients/client.guard'; // ← Ajoute ça
 
 // Importe tes composants Login et Register
 import { LoginComponent } from './auth/login/login.component'; // <-- Assure-toi du bon chemin
-import { RegisterComponent } from './auth/register/register.component'; // <-- Assure-toi du bon chemin
 
 export const routes: Routes = [
   // Routes publiques (accessibles sans être connecté)
   { path: 'login', component: LoginComponent },
-  { path: 'register', component: RegisterComponent },
 
   // ✅ Liste des clients (admin seulement)
   {

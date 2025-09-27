@@ -33,52 +33,45 @@ export class AuthService {
     }
   }
 
-  login(identifier: string, password: string): boolean {
-    const user = this.users.find(u => 
-      (u.username === identifier || u.email === identifier) && 
+login(identifier: string, password: string) {
+  // ⚡ Attention : tes admins se connectent avec username, pas email
+  const user = this.users.find(
+    u =>
+      (u.email === identifier || u.username === identifier) &&
       u.password === password
-    );
-    
-    if (user) {
-      this.currentUser = user;
-      this.saveCurrentUser();
-      return true;
-    }
-    return false;
-  }
+  );
 
-  // ✅ Méthode register (pour register.component.ts)
-  register(user: { username: string; password: string }): boolean {
-    const exists = this.users.find(u => u.username === user.username);
-    if (exists) return false;
-
-    const newUser: User = { 
-      ...user, 
-      role: 'user',
-      id: this.getNextId()
-    };
-    this.users.push(newUser);
-    this.saveUsers();
+  if (user) {
+    this.currentUser = user;     // <-- utiliser currentUser
+    this.saveCurrentUser();
     return true;
   }
+  return false;
+}
+
+getUserId() {
+  return this.currentUser?.id;   // <-- utiliser currentUser
+}
+
 
   // ✅ Création client (sans vérification admin - appelé depuis /clients)
-  createClient(clientData: { id: number; name: string; email: string; password: string }): boolean {
-    const exists = this.users.find(u => u.email === clientData.email);
-    if (exists) return false;
+createClient(userData: { id: number; name: string; email: string; password: string }) {
+  // Vérifie si l'email existe déjà
+  const exists = this.users.find(u => u.email === userData.email);
+  if (exists) return false;
 
-    const newClient: User = {
-      id: clientData.id,
-      email: clientData.email,
-      password: clientData.password,
-      name: clientData.name,
-      role: 'user'
-    };
+  const newClient: User = {
+    id: userData.id,          // ⚡ garde le même ID que dans ClientService
+    name: userData.name,
+    email: userData.email,
+    password: userData.password,
+    role: 'user'
+  };
 
-    this.users.push(newClient);
-    this.saveUsers();
-    return true;
-  }
+  this.users.push(newClient);
+  this.saveUsers(); // si tu utilises localStorage ou autre
+  return true;
+}
 
   getClients(): User[] {
     return this.users.filter(u => u.role === 'user');
@@ -108,9 +101,6 @@ export class AuthService {
     return this.currentUser?.role === 'user';
   }
 
-  getUserId(): number | null {
-    return this.currentUser?.id || null;
-  }
 
   private getNextId(): number {
     return Math.max(...this.users.map(u => u.id || 0)) + 1;

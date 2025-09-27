@@ -1,3 +1,4 @@
+
 import { Injectable, signal, computed } from '@angular/core';
 
 export interface Client {
@@ -16,7 +17,7 @@ export interface Client {
 
 @Injectable({ providedIn: 'root' })
 export class ClientService {
-  private clients = signal<Client[]>([
+  private initialClients: Client[] = [
     {
       id: 1,
       nomEntreprise: 'Dupont SARL',
@@ -56,7 +57,9 @@ export class ClientService {
       contactTelephone: '0567891234',
       siret: '45678912345678'
     }
-  ]);
+  ];
+
+  private clients = signal<Client[]>([]);
 
   // Signals publics (readonly)
   all = this.clients.asReadonly();
@@ -71,26 +74,43 @@ export class ClientService {
     return secteurCount;
   });
 
-  // Méthodes CRUD
+  constructor() {
+    this.loadFromStorage();
+  }
+
+  // ===== Persistance =====
+  private loadFromStorage(): void {
+    const stored = localStorage.getItem('clients');
+    if (stored) {
+      this.clients.set(JSON.parse(stored));
+    } else {
+      this.clients.set(this.initialClients); // Si rien en storage → prend tes mocks
+      this.saveToStorage();
+    }
+  }
+
+  private saveToStorage(): void {
+    localStorage.setItem('clients', JSON.stringify(this.clients()));
+  }
+
+  // ===== CRUD =====
   add(client: Omit<Client, 'id'>) {
-    const newClient: Client = {
-      ...client,
-      id: Date.now()
-    };
+    const newClient: Client = { ...client, id: Date.now() }; // ID unique
     this.clients.update(list => [...list, newClient]);
+    this.saveToStorage(); // ← sauvegarde
     return newClient;
   }
 
   update(id: number, updates: Partial<Client>) {
     this.clients.update(list => 
-      list.map(client => 
-        client.id === id ? { ...client, ...updates } : client
-      )
+      list.map(client => client.id === id ? { ...client, ...updates } : client)
     );
+    this.saveToStorage();
   }
 
   delete(id: number) {
     this.clients.update(list => list.filter(c => c.id !== id));
+    this.saveToStorage();
   }
 
   findById(id: number) {
