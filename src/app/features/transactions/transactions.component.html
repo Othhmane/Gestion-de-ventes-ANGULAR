@@ -34,16 +34,16 @@
 
   <!-- Formulaire d'ajout de transaction -->
   <div class="transaction-form-container">
-    <div class="form-toggle">
-      <button 
-        class="toggle-btn" 
-        [class.active]="showTransactionForm"
-        (click)="showTransactionForm = !showTransactionForm"
-      >
-        <i class="icon-plus" *ngIf="isAdmin"></i>
-        {{ showTransactionForm ? 'Masquer' : 'Nouvelle transaction' }}
-      </button>
-    </div>
+<div class="form-toggle" *ngIf="isAdmin">
+  <button 
+    class="toggle-btn" 
+    [class.active]="showTransactionForm"
+    (click)="showTransactionForm = !showTransactionForm"
+  >
+    <i class="icon-plus"></i>
+    {{ showTransactionForm ? 'Masquer' : 'Nouvelle transaction' }}
+  </button>
+</div>
 
     <div class="transaction-form" [class.show]="showTransactionForm">
       <form [formGroup]="transactionForm" (ngSubmit)="addTransaction()" class="form-grid-transaction">
@@ -191,11 +191,12 @@
             </td>
             <td>
               <div class="action-buttons">
+
                 <button class="btn-edit" (click)="editTransaction(transaction)" title="Modifier">
-                  <i class="icon-edit"></i>
+                  <i class="fas fa-edit"></i> Modifier
                 </button>
-                <button class="btn-delete" (click)="deleteTransaction(transaction.id)" title="Supprimer">
-                  <i class="icon-delete"></i>
+                <button class="btn-delete" (click)="deleteTransaction(transaction.id)">
+                  <i class="fas fa-trash"></i> Supprimer
                 </button>
               </div>
             </td>
